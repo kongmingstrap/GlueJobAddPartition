@@ -1,0 +1,53 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda Stack
+
+Resources:
+  DeviceHistoryAddPartitionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: device-history-add-partition
+      CodeUri: src/handlers/device_history_add_partition
+      Handler: index.handler
+      Runtime: python3.6
+      AutoPublishAlias: development
+      Timeout: 60
+      MemorySize: 128
+      Role: !GetAtt DeviceHistoryAddPartitionFunctionRole.Arn
+      Environment:
+        Variables:
+          ATHENA_DATABASE: default
+          ATHENA_TABLENAME: device-history
+          TARGET_BUCKET: !Sub s3://device-history-${AWS::AccountId}-${AWS::Region}/etl_data
+          OUTPUT_LOCATION: !Sub s3://aws-athena-query-results-${AWS::AccountId}-${AWS::Region}
+      Events:
+        GlueJobTrigger:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              detail:
+                state:
+                  - SUCCEEDED
+              detail-type:
+                - Glue Job State Change
+              source:
+                - aws.glue
+
+  DeviceHistoryAddPartitionFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: device-history-add-partition-function-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: !Sub /${AWS::StackName}/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonAthenaFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
