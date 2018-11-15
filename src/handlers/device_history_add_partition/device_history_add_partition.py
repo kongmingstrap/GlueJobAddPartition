@@ -31,7 +31,7 @@ class DeviceHistoryAddPartition(object):
                 }
             )
         except Exception as e:
-            return print(e)
+            print(e)
 
     def make_sql(self, table_name, target_bucket, date):
         path = os.path.join(
