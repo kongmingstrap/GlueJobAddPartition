@@ -1,7 +1,5 @@
-import datetime
 import os
-
-from pytz import timezone
+from datetime import datetime, timedelta, timezone
 
 
 class DeviceHistoryAddPartition(object):
@@ -17,9 +15,9 @@ class DeviceHistoryAddPartition(object):
             target_bucket = os.environ['TARGET_BUCKET']
             output_location = os.environ['OUTPUT_LOCATION']
 
-            now = datetime.datetime.now(timezone('UTC'))
-            jst_now = now.astimezone(timezone('Asia/Tokyo'))
-            yesterday = jst_now - datetime.timedelta(days=1)
+            JST = timezone(timedelta(hours=+9), 'JST')
+            current_date = datetime.now(tz=JST)
+            yesterday = current_date - timedelta(days=1)
 
             sql = self.make_sql(table_name, target_bucket, yesterday)
 
@@ -33,7 +31,7 @@ class DeviceHistoryAddPartition(object):
                 }
             )
         except Exception as e:
-            return e.message
+            return print(e)
 
     def make_sql(self, table_name, target_bucket, date):
         path = os.path.join(
